@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>飛行貓咪遊戲</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #87CEEB;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #startButton, #retryButton, #nextLevelButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 40px;
+            background-color: #ff6f61;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: none;
+        }
+        #startButton {
+            display: block;
+        }
+        #cat {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-image: url('cat.png'); /* 替換為貓咪圖片 */
+            background-size: cover;
+        }
+        .pipe {
+            position: absolute;
+            width: 50px;
+            background-color: #228B22;
+        }
+        .top {
+            top: 0;
+        }
+        .bottom {
+            bottom: 0;
+        }
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <button id="startButton">開始挑戰</button>
+        <button id="retryButton">重新挑戰</button>
+        <button id="nextLevelButton">恭喜通關，下一關</button>
+        <div id="score">分數: 50</div>
+        <div id="cat"></div>
+    </div>
+
+    <script>
+        const gameContainer = document.getElementById('gameContainer');
+        const startButton = document.getElementById('startButton');
+        const retryButton = document.getElementById('retryButton');
+        const nextLevelButton = document.getElementById('nextLevelButton');
+        const cat = document.getElementById('cat');
+        const scoreElement = document.getElementById('score');
+
+        let score = 50;
+        let catY = window.innerHeight / 2;
+        let gravity = 0.5;
+        let lift = -10;
+        let velocity = 0;
+        let gameInterval;
+        let pipes = [];
+        let pipeSpeed = 2;
+        let level = 1;
+        let gameTime = 60;
+
+        startButton.addEventListener('click', startGame);
+        retryButton.addEventListener('click', startGame);
+        nextLevelButton.addEventListener('click', nextLevel);
+
+        function startGame() {
+            score = 50;
+            level = 1;
+            gameTime = 60;
+            pipeSpeed = 2;
+            startButton.style.display = 'none';
+            retryButton.style.display = 'none';
+            nextLevelButton.style.display = 'none';
+            scoreElement.innerText = `分數: ${score}`;
+            catY = window.innerHeight / 2;
+            velocity = 0;
+            pipes = [];
+            cat.style.top = `${catY}px`;
+            gameInterval = setInterval(updateGame, 20);
+        }
+
+        function nextLevel() {
+            score = 50;
+            gameTime = 60;
+            pipeSpeed += 0.5;
+            nextLevelButton.style.display = 'none';
+            scoreElement.innerText = `分數: ${score}`;
+            catY = window.innerHeight / 2;
+            velocity = 0;
+            pipes = [];
+            cat.style.top = `${catY}px`;
+            gameInterval = setInterval(updateGame, 20);
+        }
+
+        function updateGame() {
+            gameTime -= 0.02;
+            if (gameTime <= 0) {
+                endGame();
+                return;
+            }
+
+            velocity += gravity;
+            catY += velocity;
+            cat.style.top = `${catY}px`;
+
+            if (catY > window.innerHeight || catY < 0) {
+                endGame();
+                return;
+            }
+
+            if (Math.random() < 0.02) {
+                createPipe();
+            }
+
+            pipes.forEach(pipe => {
+                pipe.x -= pipeSpeed;
+                if (pipe.x < -50) {
+                    pipes.shift();
+                    score += 5;
+                    scoreElement.innerText = `分數: ${score}`;
+                }
+                pipe.element.style.left = `${pipe.x}px`;
+                if (isCollision(pipe)) {
+                    score -= 3;
+                    scoreElement.innerText = `分數: ${score}`;
+                    if (score < 0) {
+                        endGame();
+                    }
+                }
+            });
+
+            if (score >= 100) {
+                clearInterval(gameInterval);
+                nextLevelButton.style.display = 'block';
+            }
+        }
+
+        function createPipe() {
+            const pipeGap = 150;
+            const pipeHeight = Math.random() * (window.innerHeight - pipeGap);
+            const topPipe = document.createElement('div');
+            topPipe.classList.add('pipe', 'top');
+            topPipe.style.height = `${pipeHeight}px`;
+            topPipe.style.left = `${window.innerWidth}px`;
+            gameContainer.appendChild(topPipe);
+
+            const bottomPipe = document.createElement('div');
+            bottomPipe.classList.add('pipe', 'bottom');
+            bottomPipe.style.height = `${window.innerHeight - pipeHeight - pipeGap}px`;
+            bottomPipe.style.left = `${window.innerWidth}px`;
+            gameContainer.appendChild(bottomPipe);
+
+            pipes.push({x: window.innerWidth, top: pipeHeight, bottom: window.innerHeight - pipeHeight - pipeGap, element: topPipe});
+            pipes.push({x: window.innerWidth, top: window.innerHeight - pipeHeight - pipeGap, bottom: 0, element: bottomPipe});
+        }
+
+        function isCollision(pipe) {
+            const catRect = cat.getBoundingClientRect();
+            const pipeRect = pipe.element.getBoundingClientRect();
+            return !(catRect.right < pipeRect.left || catRect.left > pipeRect.right || catRect.bottom < pipeRect.top || catRect.top > pipeRect.bottom);
+        }
+
+        function endGame() {
+            clearInterval(gameInterval);
+            retryButton.style.display = 'block';
+        }
+
+        gameContainer.addEventListener('touchstart', () => {
+            velocity = lift;
+        });
+    </script>
+</body>
+</html>
