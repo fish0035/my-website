@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English CVC Word Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #ccf3e0;
+        }
+        #game-container {
+            display: none;
+            gap: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        #image-container {
+            width: 200px;
+            height: 200px;
+            border: 1px solid #ccc;
+        }
+        #image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #game-area {
+            text-align: center;
+        }
+        #word {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        #options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .option {
+            font-size: 24px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        #score, #timer {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .correct {
+            color: blue;
+        }
+        .incorrect {
+            border: 2px solid red;
+            padding: 2px;
+        }
+        #start-button {
+            font-size: 24px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <button id="start-button">遊戲開始</button>
+    <div id="game-container">
+        <div id="image-container">
+            <img id="word-image" src="" alt="Word Image">
+        </div>
+        <div id="game-area">
+            <div id="word"></div>
+            <div id="options"></div>
+            <div id="score">得分: 70</div>
+            <div id="timer">剩餘時間: 30秒</div>
+        </div>
+    </div>
+    <script>
+        const words = [
+            {word: "MAP", image: "https://drive.google.com/uc?export=view&id=16Dc-Ina7wApZQ2E2DkOawKRuz6H6URZ5"},
+            {word: "CAT", image: "https://drive.google.com/uc?export=view&id=16JC5u8Ol-_LaPwY_r5pi33BGpByuoExm"},
+            {word: "BAT", image: "https://drive.google.com/uc?export=view&id=16Pov6mljT6WndZUaOv7RkDC8cAHAlav2"},
+            {word: "CUP", image: "https://drive.google.com/uc?export=view&id=16UzCUpYxoQ0zcT91710E3psBtHy_Ftf3"},
+            {word: "FAN", image: "https://drive.google.com/uc?export=view&id=16ElXnDT72C0pmZ5QrPHH-OvRXIumWfTJ"},
+            {word: "VAN", image: "https://drive.google.com/uc?export=view&id=16eKrYFopHdkFq9b_unQiAvV6u4lbobdI"},
+            {word: "RAT", image: "https://drive.google.com/uc?export=view&id=16dVZhnrYFa57Qd_M3IORK-MDvQdpcc6C"},
+            {word: "JAM", image: "https://drive.google.com/uc?export=view&id=16aLXSE-Cv6shecrcGkCe3Oo0rQyzWyuc"},
+            {word: "DOG", image: "https://drive.google.com/uc?export=view&id=16fs6tGoI9arJNil47aWb94bUuLeOIRYZ"},
+            {word: "WEB", image: "https://drive.google.com/uc?export=view&id=16FIjYq9GJNhu-us6q5hFwcoTRycgLi2R"}
+
+        ];
+
+        let currentWord;
+        let score = 70;
+        let timeLeft = 30;
+        let timer;
+
+        document.getElementById("start-button").addEventListener("click", startGame);
+
+        function startGame() {
+            document.getElementById("start-button").style.display = "none";
+            document.getElementById("game-container").style.display = "flex";
+            updateWord();
+            updateTimer();
+            timer = setInterval(updateTimer, 1000);
+        }
+
+        function updateWord() {
+            currentWord = words[Math.floor(Math.random() * words.length)];
+            document.getElementById("word-image").src = currentWord.image;
+            
+            const wordElem = document.getElementById("word");
+            wordElem.innerHTML = `${currentWord.word[0]}<span id="middle">_</span>${currentWord.word[2]}`;
+
+            const options = document.getElementById("options");
+            options.innerHTML = "";
+            const letters = "AEIOU".split("");
+            letters.forEach(letter => {
+                const button = document.createElement("button");
+                button.textContent = letter;
+                button.className = "option";
+                button.onclick = () => checkAnswer(letter);
+                options.appendChild(button);
+            });
+        }
+
+        function checkAnswer(letter) {
+            const middleSpan = document.getElementById("middle");
+            if (letter === currentWord.word[1]) {
+                score += 5;
+                middleSpan.textContent = letter;
+                middleSpan.classList.add("correct");
+                setTimeout(() => {
+                    updateWord();
+                    middleSpan.classList.remove("correct");
+                }, 1000);
+            } else {
+                score -= 3;
+                middleSpan.textContent = "_";
+                middleSpan.classList.add("incorrect");
+                setTimeout(() => {
+                    middleSpan.classList.remove("incorrect");
+                }, 1000);
+            }
+            updateScore();
+        }
+
+        function updateScore() {
+            document.getElementById("score").textContent = `得分: ${score}`;
+            if (score >= 100) {
+                endGame("恭喜！你達到了100分！");
+            }
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            document.getElementById("timer").textContent = `剩餘時間: ${timeLeft}秒`;
+            if (timeLeft <= 0) {
+                endGame("時間到！");
+            }
+        }
+
+        function endGame(message) {
+            clearInterval(timer);
+            alert(`${message} 您的最終得分是 ${score}`);
+            document.getElementById("game-container").style.display = "none";
+            document.getElementById("start-button").style.display = "block";
+            resetGame();
+        }
+
+        function resetGame() {
+            score = 70;
+            timeLeft = 30;
+            updateScore();
+            document.getElementById("timer").textContent = `剩餘時間: ${timeLeft}秒`;
+        }
+    </script>
+</body>
+</html>
